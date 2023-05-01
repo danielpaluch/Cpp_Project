@@ -1,3 +1,2 @@
 ﻿  Project_Cpp.cpp
-LINK : warning LNK4067: niejednoznaczny punkt wejścia; wybrano "mainCRTStartup"
   Project_Cpp.vcxproj -> C:\Users\danie\source\repos\Project_Cpp\x64\Debug\Project_Cpp.exe
