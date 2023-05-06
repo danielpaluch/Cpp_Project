@@ -15,6 +15,25 @@ User user;
 void menu(sqlite3* db);
 void loggedUserMenu(sqlite3* db);
 
+string hasher(string str) {
+    string hashed_str;
+    for (char c : str) {
+        hashed_str += to_string((int)c - 48);
+    }
+    return hashed_str;
+}
+string dehash(string hashed_str) {
+    string str;
+    for (int i = 0; i < hashed_str.length(); i += 2) {
+        string code_str = hashed_str.substr(i, 2);
+        int code = stoi(code_str) + 48;
+        char c = (char)code;
+        cout << code << " = " << c << endl;
+        str += c;
+    }
+    return str;
+}
+
 void showSites(sqlite3* db) {
     system("CLS");
     cout << "Twoje witryny: \n";
@@ -29,7 +48,7 @@ void showSites(sqlite3* db) {
         const char* name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
         const char* login = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
         const char* password = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 3));
-        cout << "WITRYNA: " << name << ", LOGIN: " << login << ", PASSWORD: " << password << endl;
+        cout << "WITRYNA: " << name << ", LOGIN: " << login << ", PASSWORD: " << dehash(password) << endl;
     }
     sqlite3_finalize(stmt);
     cout << "\nNacisnij klawisz aby wrocic.." << endl;
@@ -47,9 +66,8 @@ void addSite(sqlite3* db) {
     cin >> login;
     cout << "Wprowadz haslo do witryny: ";
     cin >> password;
-
-    //hash password
-    string sql_query = "INSERT INTO sites (name, login, password, id_user) VALUES ('" + name + "', '" + login + "', '" + password + "', " + to_string(user.id) + ")";
+    string hashedPassword = hasher(password);
+    string sql_query = "INSERT INTO sites (name, login, password, id_user) VALUES ('" + name + "', '" + login + "', '" + hashedPassword + "', " + to_string(user.id) + ")";
     int rc = sqlite3_exec(db, sql_query.c_str(), nullptr, nullptr, &err_msg);
     cout << rc;
     if (rc != SQLITE_OK) {
@@ -119,7 +137,7 @@ void logIn(sqlite3* db) {
         string sql_query = "SELECT * FROM users WHERE (name = ? AND password = ?)";
         sqlite3_prepare_v2(db, sql_query.c_str(), -1, &stmt, nullptr);
         sqlite3_bind_text(stmt, 1, login.c_str(), -1, SQLITE_TRANSIENT);
-        sqlite3_bind_text(stmt, 2, pswd.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 2, hasher(pswd).c_str(), -1, SQLITE_TRANSIENT);
 
         int result_code = sqlite3_step(stmt);
         if (result_code == SQLITE_ROW) { // ZNALEZIONO
@@ -151,10 +169,11 @@ void signUp(sqlite3* db) {
     cout << "Podaj haslo: ";
     cin >> pswd;
 
-    if (login == "" || pswd == "") { //50znakow
+    if (login == "" || pswd == "" || pswd.find(" ") || pswd.length() > 50 || pswd.find("-")) { //50znakow
         cout << "Niepoprawne hasło lub login.. \n";
         menu(db);
     }
+
     string sql_query = "SELECT * FROM users WHERE name = ?";
     sqlite3_prepare_v2(db, sql_query.c_str(), -1, &stmt, nullptr);
     sqlite3_bind_text(stmt, 1, login.c_str(), -1, SQLITE_TRANSIENT);
@@ -164,7 +183,7 @@ void signUp(sqlite3* db) {
 
     if (result_code != SQLITE_ROW && result_code == SQLITE_DONE) {
         // brak uzytkownika o takim loginie
-        sql_query = "INSERT INTO users (name, password) VALUES ('" + login + "', '" + pswd + "')";
+        sql_query = "INSERT INTO users (name, password) VALUES ('" + login + "', '" + hasher(pswd) + "')";
         int rc = sqlite3_exec(db, sql_query.c_str(), nullptr, nullptr, &err_msg);
         cout << rc;
         if (rc != SQLITE_OK) {
@@ -204,7 +223,7 @@ void menu(sqlite3* db) {
         cout << "ID: " << id << ", LOGIN: " << name << ", PASSWORD: " << pswd << endl;
     }
     sqlite3_finalize(stmt);
-
+    // WYSWIETLANIE
     cout << "Wybierz opcje: ";
     cin >> option;
 
@@ -261,36 +280,7 @@ int main() {
         sqlite3_close(db);
         return 1;
     }
-    /* DODAWANIE
-    sql_query = "INSERT INTO users (name, age) VALUES ('John', 30)";
-    rc = sqlite3_exec(db, sql_query.c_str(), nullptr, nullptr, &err_msg);
-    if (rc != SQLITE_OK) {
-        std::cerr << "Error inserting record: " << err_msg << std::endl;
-        sqlite3_free(err_msg);
-        sqlite3_close(db);
-        return 1;
-    }
-    */
     menu(db);
-    /*
-    sql_query = "SELECT * FROM users";
-    sqlite3_stmt* stmt;
-    rc = sqlite3_prepare_v2(db, sql_query.c_str(), -1, &stmt, nullptr);
-    cout << rc;
-    if (rc != SQLITE_OK) {
-        cout << "Error preparing SELECT statement: " << sqlite3_errmsg(db) << endl;
-        sqlite3_close(db);
-        return 1;
-    }
-
-    while (sqlite3_step(stmt) == SQLITE_ROW) {
-        int id = sqlite3_column_int(stmt, 0);
-        const char* name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
-        const char* passwd = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2)); // chagne type
-        cout << "ID: " << id << ", LOGIN: " << name << ", PASSWORD: " << passwd << endl;
-    }
-    sqlite3_finalize(stmt);
-    */
     sqlite3_close(db);
 
     return 0;
