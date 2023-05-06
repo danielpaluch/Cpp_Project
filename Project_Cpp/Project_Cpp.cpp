@@ -169,7 +169,7 @@ void signUp(sqlite3* db) {
     cout << "Podaj haslo: ";
     cin >> pswd;
 
-    if (login == "" || pswd == "" || pswd.find(" ") || pswd.length() > 50 || pswd.find("-")) { //50znakow
+    if (login == "" || pswd == "" || pswd.length() > 50) {
         cout << "Niepoprawne hasło lub login.. \n";
         menu(db);
     }
