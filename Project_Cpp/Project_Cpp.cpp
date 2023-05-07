@@ -169,7 +169,24 @@ void signUp(sqlite3* db) {
     cout << "Podaj haslo: ";
     cin >> pswd;
 
-    if (login == "" || pswd == "" || pswd.length() > 50) {
+    string regex = "!@#$%^&*()_+=-;'.,/";
+    size_t regexPswd;
+    size_t regexLogin;
+    for (char c : login) {
+        regexPswd = regex.find(c);
+        if (regexPswd != string::npos) {
+            cout << "Niepoprawne znaki.. \n";
+            menu(db);
+        }
+    }
+    for (char c : pswd) {
+        regexLogin = regex.find(c);
+        if (regexLogin != string::npos) {
+            cout << "Niepoprawne znaki.. \n";
+            menu(db);
+        }
+    }
+    if (login == "" || pswd == "" || pswd.length() > 50 || login.length() > 50) {
         cout << "Niepoprawne hasło lub login.. \n";
         menu(db);
     }
